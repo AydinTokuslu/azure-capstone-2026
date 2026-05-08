@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     # third party
     'crispy_forms',
     'crispy_bootstrap4',
-    'storages'
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -139,10 +139,10 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
+#MEDIA_URL = '/media/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-MEDIA_ROOT = BASE_DIR / "media_root"
+#MEDIA_ROOT = BASE_DIR / "media_root"
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
@@ -153,34 +153,31 @@ LOGIN_REDIRECT_URL = "blog:list"
 LOGIN_URL = "login"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-#AWS_STORAGE_BUCKET_NAME = 'capstone-aydin-blog' # please enter your s3 bucket name
-#AWS_S3_REGION_NAME = "us-east-1" # please enter your s3 region 
-#AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-#AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-#AWS_DEFAULT_ACL = 'public-read'
-#AWS_LOCATION = 'static'
+AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
+AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
+AZURE_CONTAINER = os.getenv("AZURE_CONTAINER")
 
-#STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+        "OPTIONS": {
+            "account_name": AZURE_ACCOUNT_NAME,
+            "account_key": AZURE_ACCOUNT_KEY,
+            "azure_container": AZURE_CONTAINER,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
-#STORAGES = {
-#    "default": {
-#        "BACKEND": "cblog.storages.MediaStore",
-#    },
-#    "staticfiles": {
-#        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-#    },
-#}
-
-#STATICFILES_DIRS = [
-#    os.path.join(BASE_DIR, 'static'),
-#]
-
-#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/"
 
 
 
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://20.74.101.17",
+    "http://*",
+    "https://*",
 ]

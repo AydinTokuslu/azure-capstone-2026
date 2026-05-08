@@ -2,4 +2,4 @@
 venv/
 __pycache__/
 staticfiles/
-*.pyc
+media_root/
