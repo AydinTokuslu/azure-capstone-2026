@@ -177,7 +177,12 @@ MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINE
 
 ALLOWED_HOSTS = ["*"]
 
+#CSRF_TRUSTED_ORIGINS = [
+#    "http://*",
+#    "https://*",
+#]
+
 CSRF_TRUSTED_ORIGINS = [
-    "http://*",
-    "https://*",
+    "http://cloud.devopsaydintokuslu.online",
+    "https://cloud.devopsaydintokuslu.online",
 ]
