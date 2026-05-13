@@ -283,5 +283,5 @@ At the end of the project:
 # Author
 
 Aydin Tokuslu  
-Junior AWS & DevOps Engineer  
+Cloud & DevOps Engineer  
 Germany
