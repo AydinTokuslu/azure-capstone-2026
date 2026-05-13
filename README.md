@@ -11,7 +11,7 @@ The entire infrastructure was configured and managed using Azure Portal services
 ---
 
 # Architecture Components
-![Project_004](capstone.jpg)
+![Project_004](capstone.png)
 
 ## 1. Azure Virtual Network (VNet)
 
@@ -198,6 +198,7 @@ Only required ports and services were exposed publicly.
 ## Expected Outcome
 
 ![Phonebook App Search Page](./outcome.png)
+
 
 
 # Linux & DevOps Automation
