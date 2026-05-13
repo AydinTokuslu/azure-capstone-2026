@@ -1,304 +1,286 @@
-# Project-503 (Azure Portal Version): Django Blog on Azure with Application Gateway, VM Scale Set, Azure Database for MySQL, Storage (Blob + Static Website), Azure Front Door, Azure DNS, and Azure Functions
+# Azure Capstone Project – Cloud-Native Django Blog Platform
 
-## Description
+## Project Overview
 
-The Clarusway Blog Page Application aims to deploy blog application as a web application written Django Framework on Azure Cloud Infrastructure. This infrastructure has Application Load Balancer with Auto Scaling Group of Elastic Compute Cloud (EC2) Instances and Relational Database Service (RDS) on defined VPC. Also, The Cloudfront and Route 53 services are located in front of the architecture and manage the traffic in secure. User is able to upload pictures and videos on own blog page and these are kept on S3 Bucket. This architecture will be created by Firms DevOps Guy.
+This project demonstrates the deployment of a production-style Django Blog application on Microsoft Azure using scalable, highly available, and cloud-native infrastructure services. The architecture was designed to simulate a real-world DevOps environment with autoscaling, load balancing, private networking, media storage, DNS routing, failover mechanisms, and serverless event-driven processing.
 
-## Problem Statement
+The application allows users to create blog posts, upload images and media files, authenticate users, and store application data in a managed MySQL database. Uploaded media files are stored in Azure Blob Storage, while Azure Functions automatically process Blob Storage events and log metadata into Azure Table Storage.
 
+The entire infrastructure was configured and managed using Azure Portal services, Linux VM automation, networking configurations, and cloud-native Azure components.
+
+---
+
+# Architecture Components
 ![Project_004](capstone.jpg)
 
-- Your company has recently ended up a project that aims to serve as Blog web application on isolated VPC environment. You and your colleagues have started to work on the project. Your Developer team has developed the application and you are going to deploy the app in production environment.
+## 1. Azure Virtual Network (VNet)
 
-- Application is coded by Clarusway Fullstack development team and given you as DevOps team. App allows users to write their own blog page to whom user registration data should be kept in separate MySQL database in AWS RDS service and pictures or videos should be kept in S3 bucket. The object list of S3 Bucket containing movies and videos is recorded on DynamoDB table. 
+A dedicated Azure Virtual Network was created to isolate the application environment and provide secure communication between all Azure resources.
 
-- The web application will be deployed using Django framework.
+The architecture includes:
 
-- The Web Application should be accessible via web browser from anywhere in secure.
+- Public Subnets
+- Private Subnets
+- Custom Route Tables
+- Network Security Groups (NSGs)
 
-- You are requested to push your program to the project repository on the Github. You are going to pull it into the webservers in the production environment on AWS Cloud. 
+The public subnet hosts frontend components such as the Azure Application Gateway, while backend application servers and databases remain isolated inside private subnets.
 
-In the architecture, you can configure your infrastructure using the followings,
+---
 
-  - The application stack should be created with new AWS resources.
+## 2. Azure VM Scale Sets (VMSS)
 
-  - Specifications of VPC:
+The backend Django application servers were deployed using Azure Virtual Machine Scale Sets (VMSS).
 
-    - VPC has two AZs and every AZ has 1 public and 1 private subnets.
+Features implemented:
 
-    - VPC has Internet Gateway
+- Multiple backend Ubuntu Linux instances
+- Autoscaling architecture
+- High availability
+- Health probe integration
+- Automatic instance provisioning
+- Shared application deployment process
 
-    - One of public subnets has NAT Instance.
+Each VM instance automatically installs:
 
-    - You might create new instance as Bastion host on Public subnet or you can use NAT instance as Bastion host.
+- Python
+- Django dependencies
+- Gunicorn
+- Nginx
+- Application source code from GitHub
 
-    - There should be managed private and public route tables.
+using automated startup scripts (cloud-init / custom script extension).
 
-    - Route tables should be arranged regarding of routing policies and subnet associations based on public and private subnets.
+---
 
-  - You should create Application Load Balancer with Auto Scaling Group of Ubuntu 18.04 EC2 Instances within created VPC.
+## 3. Azure Application Gateway
 
-  - You should create RDS instance within one of private subnets on created VPC and configure it on application.
+Azure Application Gateway was configured as a Layer 7 Load Balancer for frontend traffic management.
 
-  - The Auto Scaling Group should use a Launch Template in order to launch instances needed and should be configured to;
+Responsibilities:
 
-    - use all Availability Zones on created VPC.
+- HTTP traffic routing
+- Backend health checks
+- Reverse proxy functionality
+- Traffic distribution across VMSS instances
+- High availability frontend entry point
 
-    - set desired capacity of instances to  ` 2`
+The Application Gateway forwards client traffic to healthy backend VM instances running the Django application.
 
-    - set minimum size of instances to  ` 2`
+---
 
-    - set maximum size of instances to  ` 4`
+## 4. Azure Database for MySQL
 
-    - set health check grace period to  ` 90 seconds`
+A managed Azure Database for MySQL instance was deployed to store:
 
-    - set health check type to  ` ELB`
+- User accounts
+- Blog posts
+- Authentication data
+- Application metadata
 
-    - Scaling Policy --> Target Tracking Policy
+Security design:
 
-      - Average CPU utilization (set Target Value ` %70`)
+- Database located inside private networking
+- Accessible only from backend application servers
+- Protected using NSG rules and subnet isolation
 
-      - seconds warm up before including in metric ---> `200`
+---
 
-      - Set notification to your email address for launch, terminate, fail to launch, fail to terminate instance situations
+## 5. Azure Blob Storage
 
-  - ALB configuration;
-    
-    - Application Load Balancer should be placed within a security group which allows HTTP (80) and HTTPS (443) connections from anywhere. 
-    
-    - Certification should be created for secure connection (HTTPS) 
-      - To create certificate, AWS Certificate Manager can be utilized.
+Azure Blob Storage was integrated for media management.
 
-    - ALB redirects to traffic from HTTP to HTTPS
+Uploaded files such as:
 
-    - Target Group
-      - Health Check Protocol is going to be HTTP
+- Profile pictures
+- Blog images
+- Media assets
 
-  - The Launch Template should be configured to;
+are automatically stored inside Blob Storage containers instead of local VM disks.
 
-    - Prepare Django environment on EC2 instance based on Developer Notes,
+Benefits:
 
-    - Download the "clarusway_aws_capstone" folder from Github repository,
+- Persistent storage
+- Shared media access across all VM instances
+- Scalability
+- High durability
+- Cloud-native storage architecture
 
-    - Install the requirements using requirements.txt in 'clarusway_aws_capstone' folder
+---
 
-    - Deploy the Django application on port 80.
+## 6. Azure Static Website Hosting
 
-    - Launch Template only allows HTTP (80) and HTTPS (443) ports coming from ALB Security Group and SSH (22) connections from anywhere.
+Azure Storage Static Website Hosting was configured to provide a failover maintenance page.
 
-    - EC2 Instances type can be configured as `t2.micro`.
+Purpose:
 
-    - Instance launched should be tagged `Clarusway AWS Capstone Project`
+- Display maintenance page during backend outages
+- Disaster recovery simulation
+- Secondary fallback architecture
 
-    - Since Django App needs to talk with S3, S3 full access role must be attached EC2s. 
+---
 
-  - For RDS Database Instance;
-  
-    - Instance type can be configured as `db.t2.micro`
+## 7. Azure DNS
 
-    - Database engine can be `MySQL` with version of `8.0.20`.
+Azure DNS was configured for custom domain management.
 
-    - RDS endpoint should be addressed within settings file of blog application that is explained developer notes.
+The project domain was mapped to Azure frontend services, enabling browser-based access using custom URLs.
 
-    - Please read carefully "Developer notes" to manage RDS sub settings.
+---
 
-  - Cloudfront should be set as a cache server which points to Application Load Balance with following configurations;
+## 8. Azure Traffic Manager
 
-    - The cloudfront distribution should communicate with ALB securely.
+Azure Traffic Manager was configured to simulate failover routing behavior.
 
-    - Origin Protocol policy can be selected as `HTTPS only`.
+Traffic flow:
 
-    - Viewer Protocol Policy can be selected as `Redirect HTTP to HTTPS`
+Primary:
+- Azure Application Gateway
 
-  - As cache behavior;
+Secondary:
+- Azure Static Website
 
-    - GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE methods should be allowed.
+Features:
 
-    - Forward Cookies must be selected All.
+- DNS-based traffic routing
+- Endpoint monitoring
+- Failover testing
+- High availability architecture concepts
 
-    - Newly created ACM Certificate should be used for securing connections. (You can use same certificate with ALB)
+---
 
-  - Route 53 
+## 9. Azure Functions (Blob Trigger)
 
-    - Connection must be secure (HTTPS). 
+An Azure Function with Blob Trigger integration was created to process uploaded media files automatically.
 
-    - Your hostname can be used to publish website.
+Workflow:
 
-    - Failover routing policy should be set while publishing application
-      
-      - Primary connection is going to be Cloudformation
+1. User uploads image to Django application
+2. File stored inside Azure Blob Storage
+3. Blob Trigger detects upload event
+4. Azure Function executes automatically
+5. Metadata written into Azure Table Storage
 
-      - Secondary connection is going to be a static website placed another S3 bucket. This S3 bucket has just basic static website that has a picture said "the page is under construction" given files within S3_static_Website folder
+This demonstrates event-driven serverless processing in Azure.
 
-      - Healthcheck should check If Cloudfront is healthy or not. 
+---
 
-  - As S3 Bucket
+## 10. Azure Table Storage
 
-    - First S3 Bucket
+Azure Table Storage was used to store metadata generated by Azure Functions.
 
-      - It should be created within the Region that you created VPC
+Stored information includes:
 
-      - Since development team doesn't prefer to expose traffic between S3 and EC2s on internet, Endpoint should be set on created VPC. 
+- Blob name
+- Blob path
+- Upload event details
+- File size
+- Timestamp
 
-      - S3 Bucket name should be addressed within configuration file of blog application that is explained developer notes.
-    
-    - Second S3 Bucket 
-      
-      - This Bucket is going to be used for failover scenario. It has just a basic static website that has a picture said "the page is under construction"
+This component demonstrates lightweight NoSQL storage integration.
 
-  - To write the objects of S3 on DynamoDB table
-    
-    - Lambda Function 
+---
 
-      - Lambda function is going to be Python 3.8
+# Security Configuration
 
-      - Python Function can be found in github repo
+The project includes multiple cloud security concepts:
 
-      - S3 event is set as trigger
+- Network Security Groups (NSGs)
+- Private subnet isolation
+- Reverse proxy architecture
+- Controlled backend access
+- Database isolation
+- Application Gateway frontend protection
 
-      - Since Lambda needs to talk S3 and DynamoDB and to run on created VPC, S3, DynamoDB full access policies and NetworkAdministrator policy must be attached it
+Only required ports and services were exposed publicly.
 
-      - `S3 Event` must be created first S3 Bucket to trigger Lambda function 
-
-    - DynamoDB Table
-
-      - Create a DynamoDB table which has primary key that is `id`
-
-      - Created DynamoDB table's name should be placed on Lambda function.
-
-
-## Project Skeleton 
-
-```text
-clarusway_blog_proj (folder)
-|
-|----Readme.md               # Given to the students (Definition of the project)
-|----src (folder)            # Given to the students (Django Application's )
-|----requirements.txt        # Given to the students (txt file)
-|----lambda_function.py      # Given to the students (python file)
-|----developer_notes.txt     # Given to the students (txt file)
-```
-
+---
 ## Expected Outcome
 
 ![Phonebook App Search Page](./outcome.png)
 
-### At the end of the project, following topics are to be covered;
 
-- Bash scripting
+# Linux & DevOps Automation
 
-- AWS EC2 Launch Template Configuration
+The deployment process included Linux administration and DevOps practices such as:
 
-- AWS VPC Configuration
-  - VPC
-  - Private and Public Subnets
-  - Private and Public Route Tables
-  - Managing routes
-  - Subnet Associations
-  - Internet Gateway
-  - NAT Gateway
-  - Bastion Host
-  - Endpoint
+- Nginx configuration
+- Gunicorn service management
+- Python virtual environments
+- Automated VM bootstrap scripts
+- GitHub repository deployment
+- Environment variable management
+- Django production configuration
 
-- AWS EC2 Application Load Balancer Configuration
+---
 
-- AWS EC2 ALB Target Group Configuration
+# Technologies Used
 
-- AWS EC2 ALB Listener Configuration
+## Cloud Platform
+- Microsoft Azure
 
-- AWS EC2 Auto Scaling Group Configuration
+## Backend
+- Python
+- Django
+- Gunicorn
+- Nginx
 
-- AWS Relational Database Service Configuration
+## Infrastructure
+- Azure VM Scale Sets
+- Azure Application Gateway
+- Azure VNet
+- Azure DNS
+- Azure Traffic Manager
 
-- AWS EC2, RDS, ALB Security Groups Configuration
+## Storage
+- Azure Blob Storage
+- Azure Table Storage
 
-- IAM Roles configuration
+## Database
+- Azure Database for MySQL
 
-- S3 configuration
+## Serverless
+- Azure Functions
+- Blob Trigger
 
-- Static website configuration on S3
+## Operating System
+- Ubuntu Linux
 
-- DynamoDB Table configuration
+---
 
-- Lambda Function configuration
+# DevOps & Cloud Concepts Demonstrated
 
-- Get Certificate with AWS Certification Manager Configuration
+- Cloud networking
+- High availability architecture
+- Autoscaling
+- Reverse proxy configuration
+- Load balancing
+- Blob Storage integration
+- Serverless event processing
+- DNS routing
+- Failover scenarios
+- Infrastructure automation
+- Linux administration
+- Production-style Django deployment
 
-- AWS Cloudfront Configuration
+---
 
-- Route 53 Configuration
+# Project Outcome
 
-- Git & Github for Version Control System
+At the end of the project:
 
-### At the end of the project, students will be able to;
+- A scalable Django Blog platform was successfully deployed on Azure
+- Media uploads were integrated with Blob Storage
+- Multiple backend instances served traffic behind Application Gateway
+- Azure Functions processed storage events automatically
+- Traffic Manager simulated high-availability failover behavior
+- Azure DNS enabled custom domain access
+- Production-style cloud architecture concepts were implemented successfully
 
-- Construct VPC environment with whole components like public and private subnets, route tables and managing their routes, internet Gateway, NAT Instance. 
+---
 
-- Apply web programming skills, importing packages within Python Django Framework
+# Author
 
-- Configure connection to the `MySQL` database.
-
-- Demonstrate bash scripting skills using `user data` section within launch template to install and setup Blog web application on EC2 Instance.
-
-- Create a Lambda function using S3, Lambda and DynamoDB table.
-
-- Demonstrate their configuration skills of AWS VPC, EC2 Launch Templates, Application Load Balancer, ALB Target Group, ALB Listener, Auto Scaling Group, S3, RDS, Cloudfront, Route 53.
-
-- Apply git commands (push, pull, commit, add etc.) and Github as Version Control System.
-
-## Steps to Solution
-  
-- Step 1: Create dedicated VPC and whole components
-
-- Step 2: Create Security Groups (ALB ---> EC2 ---> RDS)
-
-- Step 3: Create RDS
-
-- Step 4: Create two S3 Buckets and set one of these as static website.
-
-- Step 5: Download or clone project definition from `Clarusway` repo on Github 
-
-- Step 6: Prepare your Github repository 
-
-- Step 7: Prepare a userdata to be utilized in Launch Template
-
-- Step 8: Write RDS, S3 in settings file given by Clarusway Fullstack Developer team  
-
-- Step 9: Create NAT Instance in Public Subnet
-
-- Step 10: Create Launch Template and IAM role for it
-
-- Step 11: Create certification for secure connection
-
-- Step 12: Create ALB and Target Group
-
-- Step 13: Create Autoscaling Group with Launch Template
-
-- Step 14: Create Cloudfront in front of ALB
-
-- Step 15: Create Route 53 with Failover settings
-
-- Step 16: Create DynamoDB Table
-
-- Step 17-18: Create Lambda function 
-
-- Step 17-18: Create S3 Event and set it as trigger for Lambda Function
-
-## Notes
-
-- RDS database should be located in private subnet. just EC2 machines that has ALB security group can talk with RDS.
-
-- RDS is located on private groups and only EC2s can talk with it on port 3306
-
-- ALB is located public subnet and it redirects traffic from http to https
-
-- EC2's are located in private subnets and only ALB can talk with them
-
-
-## Resources
-
-- [Python Django Framework](https://www.djangoproject.com/)
-
-- [Python Django Example](https://realpython.com/get-started-with-django-1/)
-
-- [AWS CLI Command Reference](https://docs.aws.amazon.com/cli/latest/index.html)
+Aydin Tokuslu  
+Junior AWS & DevOps Engineer  
+Germany
